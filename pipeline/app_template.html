@@ -1,0 +1,444 @@
+<title>Washington County Incident Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#F1F3EF; --panel:#FFFFFF; --panel-2:#F6F7F4; --ink:#1C2321; --muted:#67716E; --line:#D8DDD8; --line-2:#E8ECE7;
+  --accent:#1E6B5C; --accent-ink:#FFFFFF; --focus:#1E6B5C;
+  --map-land:#EEF0EA; --map-outside:#E2E5DF; --water:#C6DAE2; --water-line:#A5C0CC; --stream:#9FBFCB;
+  --road-minor:#FFFFFF; --road-minor-edge:#CBD0CA; --road-tert:#FFFFFF; --road-tert-edge:#AEB4AE;
+  --road-sec:#FBF3D6; --road-sec-edge:#B9A968; --road-pri:#F4DC8C; --road-pri-edge:#B99F45; --road-motor:#E9C9A2; --road-motor-edge:#B08A5A;
+  --rail:#9EA5A0; --boundary:#1E6B5C; --label:#4A5451; --label-halo:rgba(255,255,255,.85); --water-label:#5F8595;
+  --sev3:#C0302A; --sev2:#E4761F; --sev1:#DDAE00; --sev0:#4E7DA4; --dot-edge:rgba(255,255,255,.9);
+  --choro-lo:#E4EBE2; --choro-hi:#1E6B5C; --choro-edge:#FFFFFF;
+  --shadow:0 8px 24px rgba(20,30,26,.14);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#131715; --panel:#1B211F; --panel-2:#202725; --ink:#E7ECE9; --muted:#9BA5A0; --line:#2C3532; --line-2:#242C2A;
+    --accent:#5FB89F; --accent-ink:#0F1513; --focus:#5FB89F;
+    --map-land:#1E2422; --map-outside:#171C1A; --water:#213540; --water-line:#2E4A58; --stream:#33525F;
+    --road-minor:#333B38; --road-minor-edge:#333B38; --road-tert:#454E4B; --road-tert-edge:#454E4B;
+    --road-sec:#5E644E; --road-sec-edge:#6E7458; --road-pri:#8A7C44; --road-pri-edge:#A8975A; --road-motor:#7A6249; --road-motor-edge:#96795A;
+    --rail:#5C6560; --boundary:#5FB89F; --label:#B3BCB7; --label-halo:rgba(20,26,24,.85); --water-label:#7FA3B3;
+    --sev3:#E2554C; --sev2:#F08A33; --sev1:#F2C41F; --sev0:#6FA3CC; --dot-edge:rgba(12,16,14,.9);
+    --choro-lo:#23302B; --choro-hi:#5FB89F; --choro-edge:#131715;
+    --shadow:0 8px 24px rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#131715; --panel:#1B211F; --panel-2:#202725; --ink:#E7ECE9; --muted:#9BA5A0; --line:#2C3532; --line-2:#242C2A;
+  --accent:#5FB89F; --accent-ink:#0F1513; --focus:#5FB89F;
+  --map-land:#1E2422; --map-outside:#171C1A; --water:#213540; --water-line:#2E4A58; --stream:#33525F;
+  --road-minor:#333B38; --road-minor-edge:#333B38; --road-tert:#454E4B; --road-tert-edge:#454E4B;
+  --road-sec:#5E644E; --road-sec-edge:#6E7458; --road-pri:#8A7C44; --road-pri-edge:#A8975A; --road-motor:#7A6249; --road-motor-edge:#96795A;
+  --rail:#5C6560; --boundary:#5FB89F; --label:#B3BCB7; --label-halo:rgba(20,26,24,.85); --water-label:#7FA3B3;
+  --sev3:#E2554C; --sev2:#F08A33; --sev1:#F2C41F; --sev0:#6FA3CC; --dot-edge:rgba(12,16,14,.9);
+  --choro-lo:#23302B; --choro-hi:#5FB89F; --choro-edge:#131715;
+  --shadow:0 8px 24px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;line-height:1.45;overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+.app{position:relative;display:grid;grid-template-columns:350px 1fr;height:100vh;height:100dvh}
+.side{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.side-scroll{overflow:auto;padding:18px 18px 24px;display:flex;flex-direction:column;gap:16px;min-height:0}
+h1{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:600;font-size:28px;line-height:1;margin:0;letter-spacing:.005em;text-wrap:balance}
+.eyebrow{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:500;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.sub{color:var(--muted);margin:6px 0 0;font-size:13px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--panel-2);border:1px solid var(--line-2);border-radius:6px;padding:10px 12px}
+.stat b{display:block;font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:600;font-size:26px;line-height:1;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted)}
+section h2{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:600;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.sev-list{display:flex;flex-direction:column;gap:4px}
+.sev{display:grid;grid-template-columns:18px 1fr auto;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:1px solid transparent;border-radius:6px;padding:6px 8px;cursor:pointer}
+.sev:hover{background:var(--panel-2)}
+.sev:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.sev.off{opacity:.42}
+.sev .dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--dot-edge);box-shadow:0 0 0 1px rgba(0,0,0,.08)}
+.sev .name{font-weight:500}
+.sev .desc{display:block;font-size:11.5px;color:var(--muted);font-weight:400;line-height:1.3}
+.sev .n{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 10px;font-size:12.5px;cursor:pointer;line-height:1.2}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.chip:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.chip.year{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-size:15px;font-weight:600;padding:4px 12px;letter-spacing:.02em}
+.field{display:flex;flex-direction:column;gap:6px}
+select,input[type=search]{width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+select:focus-visible,input:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+.showing{font-size:12.5px;color:var(--muted)}
+.showing b{color:var(--ink);font-variant-numeric:tabular-nums}
+.app.county .detail{display:none}
+.detail{border-top:1px solid var(--line);background:var(--panel-2);padding:14px 18px 16px;min-height:150px}
+.detail .empty{color:var(--muted);font-size:13px;margin:0}
+.detail .ev{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:600;font-size:22px;line-height:1.1;margin:0 0 6px;text-wrap:balance}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;border-radius:999px;padding:2px 9px 2px 6px;border:1px solid var(--line);background:var(--panel);margin-bottom:10px}
+.pill i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px;margin:0}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.detail .note{font-size:11.5px;color:var(--muted);margin:10px 0 0;line-height:1.35}
+.about{font-size:12px;color:var(--muted);line-height:1.45;border-top:1px solid var(--line-2);padding-top:12px}
+.about a{color:var(--accent)}
+.about details summary{cursor:pointer;color:var(--ink)}
+.mapwrap{position:relative;min-width:0;min-height:0;background:var(--map-outside)}
+canvas#map{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+canvas#map.drag{cursor:grabbing}
+canvas#map.pt{cursor:pointer}
+.zoom{position:absolute;right:14px;top:14px;display:flex;flex-direction:column;box-shadow:var(--shadow);border-radius:6px;overflow:hidden}
+.zoom button{width:36px;height:36px;border:0;background:var(--panel);color:var(--ink);font-size:20px;cursor:pointer;border-bottom:1px solid var(--line)}
+.zoom button:last-child{border-bottom:0;font-size:12px;font-family:"Barlow Condensed","Arial Narrow",sans-serif;letter-spacing:.06em}
+.zoom button:hover{background:var(--panel-2)}
+.zoom button:focus-visible{outline:2px solid var(--focus);outline-offset:-3px}
+.back{position:absolute;left:14px;top:14px;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:7px 12px;font-size:13px;cursor:pointer;box-shadow:var(--shadow);display:none;font-family:"Barlow Condensed","Arial Narrow",sans-serif;letter-spacing:.06em;font-weight:600;text-transform:uppercase}
+.back:hover{background:var(--panel-2)}
+.tip{position:absolute;pointer-events:none;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-left:4px solid var(--sev1);border-radius:6px;padding:8px 10px;font-size:12.5px;line-height:1.35;box-shadow:var(--shadow);max-width:270px;display:none;z-index:5}
+.tip b{display:block;font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:600;font-size:15px;line-height:1.1;margin-bottom:2px}
+.tip .m{color:var(--muted)}
+.attr{position:absolute;left:10px;bottom:8px;font-size:11px;color:var(--muted);background:color-mix(in srgb,var(--panel) 80%,transparent);padding:2px 7px;border-radius:4px}
+.legend-mini{position:absolute;right:14px;bottom:12px;background:color-mix(in srgb,var(--panel) 90%,transparent);border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:11.5px;display:none;gap:4px;flex-direction:column}
+.legend-mini span{display:flex;align-items:center;gap:6px}
+.legend-mini i{width:10px;height:10px;border-radius:50%}
+.loading{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:color-mix(in srgb,var(--map-outside) 70%,transparent);font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-size:18px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);z-index:6}
+.loading.on{display:flex}
+.county-note{font-size:12.5px;color:var(--muted)}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .side{border-right:0;border-bottom:1px solid var(--line);max-height:46vh}
+  .side-scroll{padding:14px 16px 16px;gap:12px}
+  h1{font-size:24px}
+  .stat b{font-size:22px}
+  .detail{position:absolute;left:10px;right:10px;bottom:10px;z-index:4;border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);min-height:0;padding:12px 14px}
+  .detail.hidden{display:none}
+  .legend-mini{display:flex;bottom:auto;top:60px;right:14px}
+}
+@media (prefers-reduced-motion: no-preference){ .sev,.chip{transition:background .15s,opacity .15s} }
+</style>
+<div class="app">
+  <aside class="side">
+    <div class="side-scroll">
+      <header>
+        <p class="eyebrow">Washington County, Minnesota · Sheriff &amp; city police logs</p>
+        <h1 id="title">Washington County Incident Map</h1>
+        <p class="sub" id="subtitle">Every incident in the county's public media log since September 2022, by city. Pick a city to see each call placed at its reported block or intersection.</p>
+      </header>
+      <section class="field">
+        <h2>City or township</h2>
+        <select id="citySel" aria-label="Choose a city"></select>
+      </section>
+      <div class="stats">
+        <div class="stat"><b id="stTotal">0</b><span id="stTotalLbl">incidents</span></div>
+        <div class="stat"><b id="stMapped">0</b><span id="stMappedLbl">placed on the map</span></div>
+      </div>
+      <section>
+        <h2>Year</h2>
+        <div class="chips" id="years"></div>
+      </section>
+      <section>
+        <h2>Severity</h2>
+        <div class="sev-list" id="sevList"></div>
+      </section>
+      <section id="monthSec">
+        <h2>Month</h2>
+        <div class="chips" id="months"></div>
+      </section>
+      <section class="field" id="typeSec">
+        <h2>Event type</h2>
+        <select id="typeSel"><option value="">All event types</option></select>
+        <input type="search" id="q" placeholder="Search address, case #, event…" aria-label="Search incidents">
+        <div class="showing">Showing <b id="shown">0</b> of <b id="shownOf">0</b> mapped incidents<span id="unmappedNote"></span></div>
+      </section>
+      <div class="about">
+        <details>
+          <summary>About this map</summary>
+          <p>Source: the Washington County Sheriff's Office weekly media incident summaries (<a href="https://web1.co.washington.mn.us/MediaReports/RMS/" target="_blank" rel="noopener">MediaReports/RMS</a>), every weekly file the county publishes (%(files)s files, %(first)s – %(last)s), de-duplicated by case number. The log covers the Sheriff's Office and the city police departments that share its records system (Oakdale, Woodbury, Stillwater, Cottage Grove, Bayport, Forest Lake, St. Paul Park). Coverage before 2023 is partial.</p>
+          <p>Positions are approximate by design. The county publishes addresses at block level ("5XXX 157th St N") or as intersections. Each dot is placed on the named street using OpenStreetMap address points where they exist, otherwise Washington County's house-number grid (about 1,000 numbers per mile), then nudged a few dozen meters so overlapping calls stay visible. Intersections are computed from OpenStreetMap centerlines. Older river towns (Stillwater, Bayport, Mahtomedi, Newport…) use their own numbering, so more of their calls land at street level. Incidents with no usable address are counted but not drawn.</p>
+          <p>Severity tiers are an editorial grouping of the county's %(nlabels)s event labels, not an official ranking. Base map data © OpenStreetMap contributors (ODbL).</p>
+        </details>
+      </div>
+    </div>
+    <div class="detail hidden" id="detail"><p class="empty">Click a dot to see the full incident record.</p></div>
+  </aside>
+  <div class="mapwrap" id="mapwrap">
+    <canvas id="map" aria-label="Map of Washington County, Minnesota with incident locations"></canvas>
+    <button class="back" id="back">← County</button>
+    <div class="zoom" role="group" aria-label="Zoom">
+      <button id="zin" title="Zoom in" aria-label="Zoom in">+</button>
+      <button id="zout" title="Zoom out" aria-label="Zoom out">−</button>
+      <button id="zfit" title="Reset view" aria-label="Reset view">FIT</button>
+    </div>
+    <div class="legend-mini" id="legendMini"></div>
+    <div class="tip" id="tip"></div>
+    <div class="loading" id="loading">Loading…</div>
+    <div class="attr">© OpenStreetMap contributors · Washington County media reports</div>
+  </div>
+</div>
+<script>
+(function(){
+const INDEX = %(INDEX)s;
+const DATA_BASE = 'data/';
+const SEV = [
+  {i:3,name:'Critical',desc:'Deaths, suicide calls, assaults, shots fired, fires, missing persons'},
+  {i:2,name:'High',desc:'Crashes, DWI, theft, fraud, drugs, threats, medicals, property damage'},
+  {i:1,name:'Medium',desc:'Suspicious activity, welfare checks, disputes, alarms, 911 hang-ups, animals'},
+  {i:0,name:'Low / routine',desc:'Traffic stops, parking, assists, lockouts, follow-ups, found property'}
+];
+const PREC = {block:'Block-level address, placed on the street (about ±50 m)',
+  'block~':'Block-level address, position interpolated or nearest known address (about ±150 m)',
+  intersection:'Computed intersection of the two named streets',
+  'intersection~':'Streets do not cross in map data; placed at their closest approach',
+  grid:'Street not in map data; placed from the county address grid alone',
+  street:'No usable block number; placed at the midpoint of the named street within the city',
+  area:'Named lake or area; placed at its center'};
+const PCODES = ['block','block~','intersection','intersection~','grid','street','area'];
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const YEARS = INDEX.years;
+
+// ---------- state ----------
+const sevOn = {0:true,1:true,2:true,3:true};
+const yearOn = {}; for (const y of YEARS) yearOn[y]=true;
+const monthOn = {}; for (let m=1;m<=12;m++) monthOn[m]=true;
+let typeFilter='', query='', selected=-1, hover=-1, hoverCity=-1;
+let mode='county';           // 'county' | 'city'
+let city=null;               // INDEX.cities entry
+let INC=[], pts=[], BM=null, LAB=[], vis=[];
+const cache={};
+
+// ---------- projection ----------
+const LAT0=45.03, LON0=-92.90, KX=Math.cos(LAT0*Math.PI/180);
+const px = (lon)=> (lon-LON0)*KX, py=(lat)=> -(lat-LAT0);
+const proj = (ring)=> ring.map(([la,lo])=>[px(lo),py(la)]);
+let bx0=0,bx1=1,by0=0,by1=1;
+let roads=[], water=[], streams=[], rail=[], boundary=[], labels=[], cityShapes=[];
+function bboxOf(rings){ bx0=1e9;bx1=-1e9;by0=1e9;by1=-1e9; for (const ring of rings) for (const [x,y] of ring){ if(x<bx0)bx0=x; if(x>bx1)bx1=x; if(y<by0)by0=y; if(y>by1)by1=y; } }
+function pipXY(x,y,ring){ let c=false; for(let i=0,j=ring.length-1;i<ring.length;j=i++){ const xi=ring[i][0],yi=ring[i][1],xj=ring[j][0],yj=ring[j][1]; if(((yi>y)!==(yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi)) c=!c; } return c; }
+function rank(sub){ const cls=sub.split(';')[0]; return {motorway:5,trunk:5,motorway_link:4,trunk_link:4,primary:4,primary_link:3,secondary:3,secondary_link:3,tertiary:2,tertiary_link:2}[cls]||1; }
+function prepBasemap(bm, insideFn){
+  roads = bm.roads.map(r=>{ const p=proj(r.p); const mid=p[Math.floor(p.length/2)]; return {p, rank:rank(r.s), inside: insideFn? insideFn(mid[0],mid[1]) : true}; }).sort((a,b)=>a.rank-b.rank);
+  water = bm.water.map(w=>proj(w.p)); streams=(bm.streams||[]).map(w=>proj(w.p)); rail=(bm.rail||[]).map(w=>proj(w.p));
+  boundary = bm.boundary.map(proj);
+  labels = (bm.labels||[]).map(l=>({t:l.t,x:px(l.lon),y:py(l.lat),a:l.a,k:l.k}));
+}
+
+// ---------- view ----------
+const canvas=document.getElementById('map'), ctx=canvas.getContext('2d');
+const wrap=document.getElementById('mapwrap');
+let W=0,H=0,DPR=1, scale=1, tx=0, ty=0, fitScale=1;
+function fit(){ const pad=28; const sx=(W-2*pad)/(bx1-bx0), sy=(H-2*pad)/(by1-by0); scale=Math.min(sx,sy); tx=W/2-(bx0+bx1)/2*scale; ty=H/2-(by0+by1)/2*scale; fitScale=scale; }
+function resize(){ const r=wrap.getBoundingClientRect(); DPR=window.devicePixelRatio||1; W=r.width; H=r.height; canvas.width=Math.round(W*DPR); canvas.height=Math.round(H*DPR); canvas.style.width=W+'px'; canvas.style.height=H+'px'; }
+const sx=(x)=>x*scale+tx, sy=(y)=>y*scale+ty;
+let T={};
+function readTokens(){ const cs=getComputedStyle(document.documentElement); T={}; for (const k of ['map-land','map-outside','water','water-line','stream','road-minor','road-minor-edge','road-tert','road-tert-edge','road-sec','road-sec-edge','road-pri','road-pri-edge','road-motor','road-motor-edge','rail','boundary','label','label-halo','water-label','sev0','sev1','sev2','sev3','dot-edge','ink','muted','choro-lo','choro-hi','choro-edge','panel']) T[k]=cs.getPropertyValue('--'+k).trim(); }
+
+// ---------- filtering ----------
+function rowYear(r){ return r[1].slice(0,4); }
+function rowMonth(r){ return +r[1].slice(5,7); }
+function passBase(r){ if(!yearOn[rowYear(r)]) return false; if(!monthOn[rowMonth(r)]) return false; if(typeFilter && r[3]!==typeFilter) return false;
+  if(query){ const q=query; if(!(r[2].toLowerCase().includes(q)||r[3].toLowerCase().includes(q)||r[0].toLowerCase().includes(q))) return false; } return true; }
+function refilter(){
+  if (mode==='county'){ refilterCounty(); return; }
+  vis=[]; const cnt={0:0,1:0,2:0,3:0}; let total=0, mapped=0;
+  for(let i=0;i<INC.length;i++){ const r=INC[i]; if(!yearOn[rowYear(r)]) continue; total++; if(pts[i]) mapped++; if(!pts[i]) continue; if(!passBase(r)) continue; cnt[r[4]]++; if(sevOn[r[4]]) vis.push(i); }
+  vis.sort((a,b)=>INC[a][4]-INC[b][4]);
+  document.getElementById('shown').textContent=vis.length.toLocaleString();
+  document.getElementById('shownOf').textContent=mapped.toLocaleString();
+  document.getElementById('stTotal').textContent=total.toLocaleString();
+  document.getElementById('stMapped').textContent=mapped.toLocaleString();
+  document.getElementById('unmappedNote').textContent = (total-mapped)? ' · '+(total-mapped).toLocaleString()+' with no usable address are not shown' : '';
+  for (const s of SEV) document.getElementById('sevn'+s.i).textContent=cnt[s.i].toLocaleString();
+  draw(); }
+let cityVals=[], cityMax=1;
+function countyCount(c){ let n=0; for (const y of YEARS){ if(!yearOn[y]) continue; const by=c.by[y]; if(!by) continue; for (const s of [0,1,2,3]) if(sevOn[s]) n+=by[s]||0; } return n; }
+function refilterCounty(){
+  let total=0; const cnt={0:0,1:0,2:0,3:0}; let yrs=0; for (const y of YEARS) if(yearOn[y]) yrs+= (y==='2022'? 0.33 : (y==='2026'? 0.68 : 1));
+  cityVals = INDEX.cities.map(c=>{ const n=countyCount(c); total+=n; for (const y of YEARS){ if(!yearOn[y]||!c.by[y]) continue; for (const s of [0,1,2,3]) cnt[s]+=c.by[y][s]||0; } return n/Math.max(0.2,yrs)/c.km2; });
+  cityMax = Math.max(1, ...cityVals);
+  document.getElementById('stTotal').textContent=total.toLocaleString();
+  document.getElementById('stMapped').textContent=INDEX.cities.filter((c,i)=>countyCount(c)>0).length;
+  for (const s of SEV) document.getElementById('sevn'+s.i).textContent=cnt[s.i].toLocaleString();
+  draw(); }
+
+// ---------- drawing ----------
+function path(p){ ctx.moveTo(sx(p[0][0]),sy(p[0][1])); for(let i=1;i<p.length;i++) ctx.lineTo(sx(p[i][0]),sy(p[i][1])); }
+function strokeSet(list, color, width, dash){ if(!list.length) return; ctx.beginPath(); for(const p of list) path(p); ctx.strokeStyle=color; ctx.lineWidth=width; ctx.setLineDash(dash||[]); ctx.stroke(); ctx.setLineDash([]); }
+function mix(a,b,t){ const pa=parseColor(a), pb=parseColor(b); return 'rgb('+Math.round(pa[0]+(pb[0]-pa[0])*t)+','+Math.round(pa[1]+(pb[1]-pa[1])*t)+','+Math.round(pa[2]+(pb[2]-pa[2])*t)+')'; }
+const colorCache={}; function parseColor(c){ if(colorCache[c]) return colorCache[c]; const m=c.match(/^#([0-9a-f]{6})$/i); let v; if(m){ const n=parseInt(m[1],16); v=[n>>16&255,n>>8&255,n&255]; } else { const mm=c.match(/rgba?\(([^)]+)\)/); v= mm? mm[1].split(',').slice(0,3).map(Number) : [128,128,128]; } colorCache[c]=v; return v; }
+function drawRoads(z){
+  const wmin=Math.max(.7,1.4*z), wt=Math.max(1.1,2.4*z), wsec=Math.max(1.6,3.4*z), wpri=Math.max(2,4.2*z);
+  const groups={1:[],2:[],3:[],4:[],5:[]}; for(const r of roads) groups[r.rank].push(r);
+  const drawRank=(rk,fill,edge,w)=>{ const lst=groups[rk]; if(!lst.length) return;
+    for (const pass of [0,1]){ ctx.beginPath(); let any=false; for(const r of lst){ if(pass===0 && r.inside) continue; if(pass===1 && !r.inside) continue; path(r.p); any=true; } if(!any) continue;
+      ctx.globalAlpha = pass===0? .55 : 1;
+      if (edge!==fill){ ctx.strokeStyle=edge; ctx.lineWidth=w+1.4; ctx.stroke(); }
+      ctx.strokeStyle=fill; ctx.lineWidth=w; ctx.stroke(); ctx.globalAlpha=1; } };
+  drawRank(1,T['road-minor'],T['road-minor-edge'],wmin); drawRank(2,T['road-tert'],T['road-tert-edge'],wt);
+  drawRank(3,T['road-sec'],T['road-sec-edge'],wsec); drawRank(4,T['road-pri'],T['road-pri-edge'],wpri); drawRank(5,T['road-motor'],T['road-motor-edge'],wpri);
+}
+function drawLabels(z){
+  if (z<.9) return; ctx.textAlign='center'; ctx.textBaseline='middle';
+  for(const l of labels){ if(l.k==='water' && z<1.3) continue; const X=sx(l.x),Y=sy(l.y); if(X<-40||X>W+40||Y<-20||Y>H+20) continue;
+    ctx.save(); ctx.translate(X,Y); if(l.k==='road') ctx.rotate(l.a*Math.PI/180);
+    ctx.font=(l.k==='water'?'italic 400 11px':'500 11px')+' "Barlow Condensed","Arial Narrow",sans-serif';
+    ctx.lineWidth=3; ctx.strokeStyle=T['label-halo']; ctx.strokeText(l.t,0,l.k==='road'?-7:0);
+    ctx.fillStyle= l.k==='water'? T['water-label'] : T['label']; ctx.fillText(l.t,0,l.k==='road'?-7:0); ctx.restore(); }
+}
+function draw(){
+  ctx.setTransform(DPR,0,0,DPR,0,0); ctx.lineJoin='round'; ctx.lineCap='round';
+  const z = scale/fitScale;
+  ctx.fillStyle=T['map-outside']; ctx.fillRect(0,0,W,H);
+  if (mode==='county'){ drawCounty(z); return; }
+  ctx.beginPath(); for(const r of boundary){ path(r); ctx.closePath(); } ctx.fillStyle=T['map-land']; ctx.fill('evenodd');
+  ctx.beginPath(); for(const w of water){ path(w); ctx.closePath(); } ctx.fillStyle=T['water']; ctx.fill('evenodd'); ctx.strokeStyle=T['water-line']; ctx.lineWidth=Math.max(.6,.8*z); ctx.stroke();
+  strokeSet(streams, T['stream'], Math.max(.6,.9*z));
+  strokeSet(rail, T['rail'], Math.max(.8,1.2*z), [6*z,4*z]);
+  drawRoads(z);
+  ctx.beginPath(); for(const r of boundary){ path(r); ctx.closePath(); } ctx.strokeStyle=T['boundary']; ctx.lineWidth=1.6; ctx.setLineDash([7,4]); ctx.globalAlpha=.9; ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha=1;
+  drawLabels(z);
+  const R = vis.length>6000? 3.4 : 4.2;
+  for (const i of vis){ const p=pts[i]; const X=sx(p[0]),Y=sy(p[1]); if(X<-8||X>W+8||Y<-8||Y>H+8) continue;
+    ctx.beginPath(); ctx.arc(X,Y,R,0,6.2832); ctx.fillStyle=T['sev'+INC[i][4]]; ctx.fill(); ctx.lineWidth=1.1; ctx.strokeStyle=T['dot-edge']; ctx.stroke(); }
+  for (const i of [hover,selected]){ if(i<0||!pts[i]) continue; const p=pts[i]; const X=sx(p[0]),Y=sy(p[1]);
+    ctx.beginPath(); ctx.arc(X,Y,i===selected?9:7,0,6.2832); ctx.strokeStyle=T['ink']; ctx.lineWidth=i===selected?2:1.5; ctx.stroke();
+    ctx.beginPath(); ctx.arc(X,Y,R+1,0,6.2832); ctx.fillStyle=T['sev'+INC[i][4]]; ctx.fill(); ctx.strokeStyle=T['dot-edge']; ctx.lineWidth=1.2; ctx.stroke(); }
+}
+function drawCounty(z){
+  // choropleth of incidents per year per km²
+  ctx.beginPath(); for(const w of water){ path(w); ctx.closePath(); } ctx.fillStyle=T['water']; ctx.fill('evenodd');
+  cityShapes.forEach((s,i)=>{ const v=cityVals[i]||0; const t=Math.sqrt(v/cityMax); ctx.beginPath(); for(const r of s.rings){ path(r); ctx.closePath(); }
+    ctx.fillStyle = v>0? mix(T['choro-lo'],T['choro-hi'],Math.min(1,t)) : T['map-land']; ctx.fill('evenodd');
+    ctx.strokeStyle=T['choro-edge']; ctx.lineWidth= i===hoverCity? 2.5 : 1; ctx.stroke(); });
+  ctx.beginPath(); for(const w of water){ path(w); ctx.closePath(); } ctx.fillStyle=T['water']; ctx.globalAlpha=.85; ctx.fill('evenodd'); ctx.globalAlpha=1;
+  ctx.globalAlpha=.75; drawRoads(Math.max(.5,z*.6)); ctx.globalAlpha=1;
+  if (hoverCity>=0){ const s=cityShapes[hoverCity]; ctx.beginPath(); for(const r of s.rings){ path(r); ctx.closePath(); } ctx.strokeStyle=T['ink']; ctx.lineWidth=2; ctx.stroke(); }
+  // city names + counts
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  cityShapes.forEach((s,i)=>{ const X=sx(s.cx),Y=sy(s.cy); if(X<-60||X>W+60||Y<-20||Y>H+20) return; const big = s.km2>20 || z>1.6; if(!big && z<1.1) return;
+    const n=countyCount(INDEX.cities[i]); const t=Math.sqrt((cityVals[i]||0)/cityMax);
+    ctx.font='600 '+(big?12:10.5)+'px "Barlow Condensed","Arial Narrow",sans-serif';
+    ctx.lineWidth=3; ctx.strokeStyle=T['label-halo']; ctx.strokeText(s.name,X,Y-6); ctx.fillStyle=T['ink']; ctx.fillText(s.name,X,Y-6);
+    ctx.font='400 10.5px "IBM Plex Sans",system-ui,sans-serif'; ctx.strokeText(n.toLocaleString(),X,Y+7); ctx.fillStyle=T['muted']; ctx.fillText(n.toLocaleString(),X,Y+7); });
+}
+
+// ---------- interaction ----------
+function nearest(mx,my){ let best=-1,bd=100; for(let k=vis.length-1;k>=0;k--){ const i=vis[k]; const p=pts[i]; const dx=sx(p[0])-mx, dy=sy(p[1])-my; const d=dx*dx+dy*dy; if(d<bd){bd=d;best=i;} } return best; }
+function cityAt(mx,my){ const x=(mx-tx)/scale, y=(my-ty)/scale; for(let i=0;i<cityShapes.length;i++){ for (const r of cityShapes[i].rings) if(pipXY(x,y,r)) return i; } return -1; }
+const tip=document.getElementById('tip');
+function fmtDate(iso){ const d=new Date(iso.replace(' ','T')); return d.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'})+' · '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'}); }
+function placeTip(mx,my){ tip.style.display='block'; const tw=tip.offsetWidth, th=tip.offsetHeight; let x=mx+14,y=my+14; if(x+tw>W-8) x=mx-tw-14; if(y+th>H-8) y=my-th-14; tip.style.left=x+'px'; tip.style.top=y+'px'; }
+function showTip(i,mx,my){ const r=INC[i]; tip.style.borderLeftColor=T['sev'+r[4]]; tip.innerHTML='<b>'+esc(r[3])+'</b>'+esc(r[2])+'<div class="m">'+fmtDate(r[1])+' · '+SEV.find(s=>s.i===r[4]).name+'</div>'; placeTip(mx,my); }
+function showCityTip(i,mx,my){ const c=INDEX.cities[i]; const n=countyCount(c); const yrs=YEARS.filter(y=>yearOn[y]); tip.style.borderLeftColor=T['choro-hi'];
+  tip.innerHTML='<b>'+esc(c.name)+'</b>'+n.toLocaleString()+' incidents · '+(yrs.length===YEARS.length?'all years':yrs.join(', '))+'<div class="m">'+esc(c.top.slice(0,3).join(' · '))+'</div><div class="m">Click to open</div>'; placeTip(mx,my); }
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const detail=document.getElementById('detail');
+function select(i){ selected=i; if(i<0){ detail.classList.add('hidden'); detail.innerHTML='<p class="empty">Click a dot to see the full incident record.</p>'; draw(); return; }
+  const r=INC[i]; const s=SEV.find(s=>s.i===r[4]);
+  detail.classList.remove('hidden');
+  detail.innerHTML='<p class="ev">'+esc(r[3])+'</p><span class="pill"><i style="background:'+T['sev'+r[4]]+'"></i>'+s.name+'</span>'+
+    '<dl class="kv"><dt>When</dt><dd>'+fmtDate(r[1])+'</dd><dt>Where</dt><dd>'+esc(r[2])+', '+esc(city.name)+'</dd><dt>Case</dt><dd>'+esc(r[0])+'</dd><dt>Agency</dt><dd>'+esc(r[8]||'')+'</dd>'+
+    '<dt>Placement</dt><dd>'+(PREC[r[5]]||r[5])+'</dd></dl>'+
+    '<p class="note">The county publishes only the block or intersection and the event label; there is no narrative in the public log. Case '+esc(r[0])+' can be requested from the responding agency’s records unit.</p>';
+  draw(); }
+
+let drag=null, moved=false;
+canvas.addEventListener('pointerdown',e=>{ drag={x:e.clientX,y:e.clientY,tx,ty,id:e.pointerId}; moved=false; canvas.setPointerCapture(e.pointerId); canvas.classList.add('drag'); });
+canvas.addEventListener('pointermove',e=>{ const rct=canvas.getBoundingClientRect(); const mx=e.clientX-rct.left,my=e.clientY-rct.top;
+  if(drag && pinch.length<2){ const dx=e.clientX-drag.x, dy=e.clientY-drag.y; if(Math.abs(dx)+Math.abs(dy)>3) moved=true; tx=drag.tx+dx; ty=drag.ty+dy; tip.style.display='none'; draw(); return; }
+  if (mode==='county'){ const c=cityAt(mx,my); if(c!==hoverCity){ hoverCity=c; draw(); canvas.classList.toggle('pt',c>=0); } if(c>=0) showCityTip(c,mx,my); else tip.style.display='none'; return; }
+  const n=nearest(mx,my); if(n!==hover){ hover=n; draw(); canvas.classList.toggle('pt',n>=0); } if(n>=0) showTip(n,mx,my); else tip.style.display='none'; });
+canvas.addEventListener('pointerup',e=>{ canvas.classList.remove('drag'); if(drag && !moved){ const rct=canvas.getBoundingClientRect(); const mx=e.clientX-rct.left,my=e.clientY-rct.top;
+  if (mode==='county'){ const c=cityAt(mx,my); if(c>=0) openCity(INDEX.cities[c].slug); } else select(nearest(mx,my)); } drag=null; });
+canvas.addEventListener('pointerleave',()=>{ hover=-1; hoverCity=-1; tip.style.display='none'; draw(); });
+function zoomAt(f,mx,my){ const ns=Math.min(fitScale*40,Math.max(fitScale*.6,scale*f)); const k=ns/scale; tx=mx-(mx-tx)*k; ty=my-(my-ty)*k; scale=ns; draw(); }
+canvas.addEventListener('wheel',e=>{ e.preventDefault(); const rct=canvas.getBoundingClientRect(); zoomAt(Math.exp(-e.deltaY*0.0015), e.clientX-rct.left, e.clientY-rct.top); },{passive:false});
+canvas.addEventListener('dblclick',e=>{ const rct=canvas.getBoundingClientRect(); zoomAt(1.8,e.clientX-rct.left,e.clientY-rct.top); });
+const pinch=[]; let pinchD=0;
+canvas.addEventListener('pointerdown',e=>{ if(e.pointerType==='touch'){ pinch.push({id:e.pointerId,x:e.clientX,y:e.clientY}); if(pinch.length===2) pinchD=Math.hypot(pinch[0].x-pinch[1].x,pinch[0].y-pinch[1].y); } });
+canvas.addEventListener('pointermove',e=>{ if(e.pointerType!=='touch'||pinch.length<2) return; const p=pinch.find(p=>p.id===e.pointerId); if(!p) return; p.x=e.clientX; p.y=e.clientY;
+  const d=Math.hypot(pinch[0].x-pinch[1].x,pinch[0].y-pinch[1].y); const rct=canvas.getBoundingClientRect(); const cx=(pinch[0].x+pinch[1].x)/2-rct.left, cy=(pinch[0].y+pinch[1].y)/2-rct.top; if(pinchD>0) zoomAt(d/pinchD,cx,cy); pinchD=d; drag=null; });
+const endPinch=e=>{ const k=pinch.findIndex(p=>p.id===e.pointerId); if(k>=0) pinch.splice(k,1); };
+canvas.addEventListener('pointerup',endPinch); canvas.addEventListener('pointercancel',endPinch);
+document.getElementById('zin').onclick=()=>zoomAt(1.6,W/2,H/2);
+document.getElementById('zout').onclick=()=>zoomAt(1/1.6,W/2,H/2);
+document.getElementById('zfit').onclick=()=>{ fit(); draw(); };
+document.getElementById('back').onclick=()=>openCounty();
+window.addEventListener('keydown',e=>{ if(e.key==='Escape'){ select(-1);} });
+
+// ---------- controls ----------
+const citySel=document.getElementById('citySel');
+{ const o=document.createElement('option'); o.value=''; o.textContent='Whole county (overview)'; citySel.appendChild(o);
+  for (const kind of ['city','township']){ const g=document.createElement('optgroup'); g.label= kind==='city'?'Cities':'Townships';
+    for (const c of INDEX.cities.filter(c=>c.kind===kind)){ const o=document.createElement('option'); o.value=c.slug; o.textContent=c.name+' ('+c.n.toLocaleString()+')'; g.appendChild(o); } citySel.appendChild(g); } }
+citySel.onchange=()=>{ if(citySel.value) openCity(citySel.value); else openCounty(); };
+const sevList=document.getElementById('sevList'); const mini=document.getElementById('legendMini');
+for (const s of SEV){ const b=document.createElement('button'); b.className='sev'; b.type='button'; b.setAttribute('aria-pressed','true');
+  b.innerHTML='<span class="dot" style="background:var(--sev'+s.i+')"></span><span class="name">'+s.name+'<span class="desc">'+s.desc+'</span></span><span class="n" id="sevn'+s.i+'">0</span>';
+  b.onclick=()=>{ sevOn[s.i]=!sevOn[s.i]; b.classList.toggle('off',!sevOn[s.i]); b.setAttribute('aria-pressed',String(sevOn[s.i])); refilter(); };
+  sevList.appendChild(b); mini.insertAdjacentHTML('beforeend','<span><i style="background:var(--sev'+s.i+')"></i>'+s.name+'</span>'); }
+const yearsEl=document.getElementById('years'); const yBtns={};
+const yAll=document.createElement('button'); yAll.className='chip year'; yAll.type='button'; yAll.textContent='All'; yAll.setAttribute('aria-pressed','true');
+yAll.onclick=()=>{ for(const y of YEARS) yearOn[y]=true; syncYears(); refilter(); writeHash(); }; yearsEl.appendChild(yAll);
+for (const y of YEARS){ const b=document.createElement('button'); b.className='chip year'; b.type='button'; b.textContent=y; b.setAttribute('aria-pressed','true');
+  b.onclick=(e)=>{ const allOn=YEARS.every(k=>yearOn[k]); if(allOn && !e.shiftKey){ for(const k of YEARS) yearOn[k]=false; yearOn[y]=true; } else { yearOn[y]=!yearOn[y]; if(!YEARS.some(k=>yearOn[k])) for(const k of YEARS) yearOn[k]=true; } syncYears(); refilter(); writeHash(); };
+  yBtns[y]=b; yearsEl.appendChild(b); }
+function syncYears(){ const allOn=YEARS.every(k=>yearOn[k]); yAll.setAttribute('aria-pressed',String(allOn)); for(const y of YEARS) yBtns[y].setAttribute('aria-pressed',String(yearOn[y]&&!allOn)); }
+const monthsEl=document.getElementById('months'); const monthKeys=[1,2,3,4,5,6,7,8,9,10,11,12];
+const allBtn=document.createElement('button'); allBtn.className='chip'; allBtn.type='button'; allBtn.textContent='All'; allBtn.setAttribute('aria-pressed','true');
+allBtn.onclick=()=>{ for(const m of monthKeys) monthOn[m]=true; syncMonths(); refilter(); }; monthsEl.appendChild(allBtn);
+const mBtns={};
+for (const m of monthKeys){ const b=document.createElement('button'); b.className='chip'; b.type='button'; b.textContent=MONTHS[m-1]; b.setAttribute('aria-pressed','true');
+  b.onclick=(e)=>{ const allOn=monthKeys.every(k=>monthOn[k]); if(allOn && !e.shiftKey){ for(const k of monthKeys) monthOn[k]=false; monthOn[m]=true; } else { monthOn[m]=!monthOn[m]; if(!monthKeys.some(k=>monthOn[k])) for(const k of monthKeys) monthOn[k]=true; } syncMonths(); refilter(); };
+  mBtns[m]=b; monthsEl.appendChild(b); }
+function syncMonths(){ const allOn=monthKeys.every(k=>monthOn[k]); allBtn.setAttribute('aria-pressed',String(allOn)); for(const m of monthKeys) mBtns[m].setAttribute('aria-pressed',String(monthOn[m]&&!allOn)); }
+syncYears(); syncMonths();
+const sel=document.getElementById('typeSel');
+function fillTypes(){ const typeCount={}; for (const r of INC) typeCount[r[3]]=(typeCount[r[3]]||0)+1; sel.innerHTML='<option value="">All event types</option>';
+  for (const [t,n] of Object.entries(typeCount).sort((a,b)=>b[1]-a[1])){ const o=document.createElement('option'); o.value=t; o.textContent=t+' ('+n.toLocaleString()+')'; sel.appendChild(o); } typeFilter=''; }
+sel.onchange=()=>{ typeFilter=sel.value; refilter(); };
+const q=document.getElementById('q'); q.oninput=()=>{ query=q.value.trim().toLowerCase(); refilter(); };
+
+// ---------- loading ----------
+const loading=document.getElementById('loading');
+async function getJSON(name){ if(cache[name]) return cache[name]; const r=await fetch(DATA_BASE+name); if(!r.ok) throw new Error('fetch '+name+' '+r.status); const j=await r.json(); cache[name]=j; return j; }
+function tstr(n){ const s=String(n).padStart(10,'0'); return '20'+s.slice(0,2)+'-'+s.slice(2,4)+'-'+s.slice(4,6)+' '+s.slice(6,8)+':'+s.slice(8,10); }
+function expandRows(d){ const ev=d.ev, ad=d.ad, ag=d.ag; return d.rows.map(r=>[r[0], tstr(r[1]), ad[r[2]], ev[r[3]], r[4], r[5]==null?null:PCODES[r[5]], r[6]==null?null:r[6]/1e5, r[7]==null?null:r[7]/1e5, ag[r[8]]]); }
+function setMode(m){ mode=m; document.querySelector('.app').classList.toggle('county', m==='county'); document.getElementById('back').style.display = m==='city'?'block':'none';
+  document.getElementById('monthSec').style.display = m==='city'?'':'none'; document.getElementById('typeSec').style.display = m==='city'?'':'none';
+  document.getElementById('stTotalLbl').textContent = m==='city'? 'incidents (selected years)' : 'incidents county-wide';
+  document.getElementById('stMappedLbl').textContent = m==='city'? 'placed on the map' : 'cities & townships';
+  detail.classList.add('hidden'); selected=-1; hover=-1; hoverCity=-1; tip.style.display='none'; }
+async function openCity(slug){ const c=INDEX.cities.find(c=>c.slug===slug); if(!c) return openCounty();
+  loading.classList.add('on'); try{ const [bm, inc] = await Promise.all([getJSON('city/'+slug+'.json'), getJSON('inc/'+slug+'.json')]);
+    city=c; citySel.value=slug; setMode('city');
+    document.getElementById('title').textContent=c.name+' Incident Map';
+    document.getElementById('subtitle').textContent='Every incident logged with a '+c.name+' address, '+INDEX.first_h+' – '+INDEX.last_h+', placed at its reported block or intersection. Hover a dot for a summary; click for the full record.';
+    const rings=bm.boundary.map(proj); bboxOf(rings.length?rings:[[[px(c.bbox[1]),py(c.bbox[0])],[px(c.bbox[3]),py(c.bbox[2])]]]);
+    const main=rings.slice().sort((a,b)=>b.length-a.length); const insideFn = rings.length? (x,y)=>main.some(r=>pipXY(x,y,r)) : null;
+    prepBasemap(bm, insideFn);
+    INC=expandRows(inc); pts=INC.map(r=> r[6]==null? null : [px(r[7]), py(r[6])]);
+    fillTypes(); q.value=''; query=''; fit(); refilter(); writeHash();
+  } catch(e){ console.error(e); alert('Could not load data for '+slug+'. If you opened this file directly from disk, serve it over http (or use the hosted version).'); }
+  loading.classList.remove('on'); }
+async function openCounty(){ loading.classList.add('on'); try{ const bm=await getJSON('county.json'); city=null; citySel.value=''; setMode('county');
+    document.getElementById('title').textContent='Washington County Incident Map';
+    document.getElementById('subtitle').textContent='Every incident in the county’s public media log, '+INDEX.first_h+' – '+INDEX.last_h+', by city. Shading is incidents per year per square mile for the selected years and severities. Click a city to see each call on a street map.';
+    cityShapes = INDEX.cities.map(c=>{ const rings=(bm.shapes[c.slug]||[]).map(proj); return {rings, name:c.name, km2:c.km2, cx:px(c.center[1]), cy:py(c.center[0])}; });
+    bboxOf(cityShapes.flatMap(s=>s.rings)); prepBasemap({roads:bm.roads, water:bm.water, boundary:[], labels:[]}, null);
+    INC=[]; pts=[]; vis=[]; fit(); refilter(); writeHash();
+  } catch(e){ console.error(e); alert('Could not load county data. If you opened this file directly from disk, serve it over http (or use the hosted version).'); }
+  loading.classList.remove('on'); }
+function writeHash(){ const ys=YEARS.filter(y=>yearOn[y]); const h=(city?city.slug:'county')+(ys.length<YEARS.length?'/'+ys.join(','):''); if(location.hash.slice(1)!==h) history.replaceState(null,'','#'+h); }
+function readHash(){ const h=decodeURIComponent(location.hash.slice(1)); if(!h) return null; const [slug,ys]=h.split('/'); if(ys){ for(const y of YEARS) yearOn[y]=false; for(const y of ys.split(',')) if(yearOn.hasOwnProperty(y)) yearOn[y]=true; if(!YEARS.some(y=>yearOn[y])) for(const y of YEARS) yearOn[y]=true; syncYears(); } return slug; }
+
+// ---------- boot ----------
+function boot(){ resize(); readTokens(); const slug=readHash(); if(slug && slug!=='county') openCity(slug); else openCounty(); }
+window.addEventListener('resize',()=>{ const oldW=W,oldH=H; resize(); tx+=(W-oldW)/2; ty+=(H-oldH)/2; draw(); });
+window.addEventListener('hashchange',()=>{ const slug=readHash(); if((slug||'county')!==(city?city.slug:'county')){ if(slug&&slug!=='county') openCity(slug); else openCounty(); } else refilter(); });
+const mq=window.matchMedia('(prefers-color-scheme: dark)'); mq.addEventListener('change',()=>{ readTokens(); draw(); });
+new MutationObserver(()=>{ readTokens(); draw(); }).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+boot();
+})();
+</script>
