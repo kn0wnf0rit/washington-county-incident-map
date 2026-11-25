@@ -1,0 +1,51 @@
+name: Refresh incident data
+
+on:
+  schedule:
+    # 1st of every month, 10:00 UTC (4–5 am Central). The county posts a new weekly file every Wednesday.
+    - cron: '0 10 1 * *'
+  workflow_dispatch:
+    inputs:
+      since:
+        description: 'Only download weekly files dated on/after YYYYMMDD (blank = all files)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Download weekly CSVs, geocode, rebuild site
+        run: bash pipeline/run.sh "${{ github.event.inputs.since }}"
+
+      - name: Record build summary
+        run: |
+          echo "## Rebuild $(date -u +%Y-%m-%d)" >> "$GITHUB_STEP_SUMMARY"
+          tail -n 3 pipeline/build/geocode.log >> "$GITHUB_STEP_SUMMARY" || true
+          python3 -c "import json;d=json.load(open('data/index.json'));print('Data range:',d['first_h'],'–',d['last_h']);print('Incidents:',sum(c['n'] for c in d['cities']))" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit and push if anything changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html data
+          if git diff --cached --quiet; then
+            echo "No changes — site already current."
+          else
+            git commit -m "Refresh incident data ($(date -u +%Y-%m-%d))"
+            git push
+          fi
