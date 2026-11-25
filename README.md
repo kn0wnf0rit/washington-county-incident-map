@@ -23,6 +23,17 @@ Incident rows are `[case, YYMMDDHHMM, addressIdx, eventIdx, severity, precisionI
 * Severity tiers are an editorial grouping of the county's 1,185 event labels (explicit lists plus keyword rules), not an official ranking.
 * Base map © OpenStreetMap contributors (ODbL). Incident data © Washington County.
 
-## Refreshing
+## Refreshing (automated)
 
-The county posts a new weekly CSV every Wednesday. Rebuild = download new files → `clean.py` (dedupe, severity) → `geocode_county.py` → `build_site.py`. Only `data/inc/*.json` and `data/index.json` change when new incidents arrive; basemaps only change if OSM is re-pulled.
+The county posts a new weekly CSV every Wednesday. A GitHub Actions workflow (`.github/workflows/update.yml`) runs on the 1st of every month (and on demand from the Actions tab via "Run workflow"): it downloads every weekly file from the county directory, merges them with the archived history in `pipeline/history/`, de-duplicates by case number, re-tiers severity, geocodes, rebuilds `index.html` and `data/`, and commits the result. GitHub Pages redeploys from `main` automatically, so the live site updates with no manual step. Each run writes a summary (date range, incident count, placement rate) to the Actions job page; a failed run — for example if the county changes its site layout — shows up as a red run and an email from GitHub.
+
+To run it locally: `bash pipeline/run.sh` (Python 3.10+, no third-party packages). Street geometry comes from `pipeline/osm_county.txt`, a one-time OpenStreetMap extract; it only needs refreshing if new streets are built.
+
+```
+pipeline/fetch.py          download weekly CSVs into pipeline/raw/
+pipeline/clean.py          merge history/ + raw/, dedupe, parse dates, assign severity
+pipeline/severity.py       severity tiers (explicit lists + keyword rules)
+pipeline/geocode_county.py per-city geocoder (OSM address points, county grid, intersections)
+pipeline/mask.py           reduces any exact house numbers in the log to block level
+pipeline/build_site.py     writes index.html and data/ from app_template.html
+```
